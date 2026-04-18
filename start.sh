@@ -38,6 +38,19 @@ with app.app_context():
 echo "==> Running DB migrations..."
 flask --app run.py db upgrade || true
 
+echo "==> Ensuring Base Tables Exist..."
+# If Alembic skipped migrations because it found an old alembic_version row,
+# this guarantees that missing tables (like 'images') are forcefully recreated.
+python -c "
+from app import create_app
+from app.extensions import db
+
+app = create_app()
+with app.app_context():
+    db.create_all()
+    print('Base tables safely verified/recreated.')
+"
+
 echo "==> Running manual extras (IVFFlat index, crawl_jobs table)..."
 python -c "
 from app import create_app
