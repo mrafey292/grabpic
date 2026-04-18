@@ -27,6 +27,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Suppress annoying TensorFlow C++ logging noise
+ENV TF_CPP_MIN_LOG_LEVEL=2
+ENV TF_ENABLE_ONEDNN_OPTS=0
+
 # System deps for DeepFace (OpenCV needs these)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \

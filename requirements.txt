@@ -6,6 +6,7 @@ flasgger>=0.9.7          # swagger UI at /apidocs — free
 psycopg2-binary>=2.9
 pgvector>=0.3.0          # python adapter for pgvector types
 deepface>=0.0.93         # wraps ArcFace, FaceNet etc — free
+tf-keras>=2.16.0         # required by deepface when using recent tensorflow
 pillow>=10.0             # thumbnails
 python-dotenv>=1.0
 gunicorn>=21.0
