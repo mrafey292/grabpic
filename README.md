@@ -1,21 +1,37 @@
 # Grabpic
 
-Intelligent facial recognition backend for large-scale event photo retrieval.  
+Intelligent facial recognition backend for large-scale event photo retrieval.
+
+**Live Demo (Railway):** [Add Railway Link Here](#)
+
 Stack: **Flask · DeepFace (ArcFace) · PostgreSQL + pgvector**
+
+> [!TIP]
+> **Default Admin API Key**: When testing endpoints in the Swagger UI (at `/apidocs` or the root URL), click the "Authorize" button and enter `admin-secret` to authenticate admin routes like `/upload` and `/crawl`.
+
+---
+
+## Features
+
+- **Fast & Accurate Face Matching:** Uses DeepFace (ArcFace) for extracting highly accurate facial embeddings.
+- **Vector Database Native:** Embeddings are stored directly in PostgreSQL using pgvector, enabling blazing-fast similarity searches using cosine distance.
+- **Event Photo Crawling:** Crawl storage directories to automatically detect, extract, and index all faces in photos.
+- **Admin Upload Endpoint:** Allows you to upload event photos via API.
+- **Selfie Authentication:** Users upload a selfie, which grants them a JWT to fetch exclusively their photos.
 
 ---
 
 ## Prerequisites
 
 - Python 3.11+
-- Docker + Docker Compose
 - Git
+- Docker + Docker Compose (for running the PostgreSQL + pgvector instance)
 
 ---
 
-## Setup
+## Setup & Local Development
 
-### 1. Clone & enter the repo
+### 1. Clone & Enter the Repo
 ```bash
 git clone <your-repo-url>
 cd grabpic
@@ -25,129 +41,38 @@ cd grabpic
 ```bash
 docker compose up -d
 ```
-This spins up Postgres 16 with pgvector pre-installed. No extra setup needed.
+This spins up Postgres 16 with pgvector pre-installed and exposes it on port 5432.
 
-### 3. Create and activate virtual environment
+### 3. Create & Activate Virtual Environment
 ```bash
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
 ```
 
-### 4. Install dependencies
+### 4. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
-> Note: DeepFace will download ArcFace model weights (~500MB) on first run.
+> **Note:** DeepFace will download the ArcFace model weights (~500MB) on the very first run.
 
-### 5. Configure environment
+### 5. Configure Environment Variables
 ```bash
 cp .env.example .env
-# Edit .env if needed — defaults work out of the box with docker compose
 ```
+_Edit `.env` if needed — the defaults work out of the box with the docker-compose DB._
 
-### 6. Initialize the database
+### 6. Initialize Database & Run Server
+To apply migrations, set up pgvector, and start the application locally:
 ```bash
-flask --app run.py db init      # only first time
-flask --app run.py db migrate -m "initial"
-flask --app run.py db upgrade
+bash start.sh
 ```
-
-### 7. Enable pgvector extension
-```bash
-docker exec -it grabpic_db psql -U grabpic -d grabpic -c "CREATE EXTENSION IF NOT EXISTS vector;"
-```
-
-### 8. Run the server
+Or to run the local Flask dev server (after `start.sh` has run once for migrations):
 ```bash
 python run.py
 ```
-API is live at `http://localhost:5000`  
-Swagger docs at `http://localhost:5000/apidocs`
 
----
-
-## Add Event Photos
-
-Drop your event images into the `./storage/` directory:
-```bash
-cp /path/to/marathon/photos/* ./storage/
-```
-
----
-
-## API Usage (cURLs)
-
-### Crawl & Index Storage
-```bash
-curl -X POST http://localhost:5000/api/v1/admin/crawl \
-  -H "X-Admin-Key: admin-secret" \
-  -H "Content-Type: application/json" \
-  -d '{"force_reindex": false}'
-```
-
-### Poll Crawl Status
-```bash
-curl http://localhost:5000/api/v1/admin/crawl/status/<job_id> \
-  -H "X-Admin-Key: admin-secret"
-```
-
-### Get System Stats
-```bash
-curl http://localhost:5000/api/v1/admin/stats \
-  -H "X-Admin-Key: admin-secret"
-```
-
-### Authenticate with Selfie
-```bash
-curl -X POST http://localhost:5000/api/v1/auth/selfie \
-  -F "selfie=@/path/to/your/selfie.jpg"
-```
-Response includes a `token` (JWT) and your `grab_id`.
-
-### Get Your Photos
-```bash
-curl http://localhost:5000/api/v1/images \
-  -H "Authorization: Bearer <token>"
-```
-
-### Get a Specific Image (metadata)
-```bash
-curl http://localhost:5000/api/v1/images/<image_id> \
-  -H "Authorization: Bearer <token>"
-```
-
-### Download a Photo
-```bash
-curl http://localhost:5000/api/v1/images/<image_id>/file \
-  -H "Authorization: Bearer <token>" \
-  --output photo.jpg
-```
-
-### Download a Thumbnail
-```bash
-curl http://localhost:5000/api/v1/images/<image_id>/thumbnail \
-  -H "Authorization: Bearer <token>" \
-  --output thumb.jpg
-```
-
----
-
-## How pgvector Works
-
-pgvector is a PostgreSQL extension that adds a native `vector` column type and fast similarity search operators. No external vector database needed.
-
-```sql
--- Store an embedding
-INSERT INTO face_identities (embedding) VALUES ('[0.12, -0.34, ...]'::vector);
-
--- Find closest match using cosine distance (<=>)
-SELECT grab_id, embedding <=> '[0.11, -0.33, ...]'::vector AS distance
-FROM face_identities
-ORDER BY distance
-LIMIT 1;
-```
-
-Distance of `0` = identical faces. We treat anything below `0.40` as the same person.
+The API will be live at: `http://localhost:5000`
+Swagger documentation is available at: `http://localhost:5000/apidocs`
 
 ---
 
@@ -157,17 +82,89 @@ Distance of `0` = identical faces. We treat anything below `0.40` as the same pe
 grabpic/
 ├── app/
 │   ├── __init__.py         # Flask app factory
-│   ├── config.py
+│   ├── config.py           # Settings and Environment Variables
 │   ├── extensions.py       # db, jwt, migrate
-│   ├── models/             # SQLAlchemy models
+│   ├── models/             # SQLAlchemy Models (schema definitions)
 │   ├── routes/             # Blueprints: admin, auth, images
-│   ├── services/           # face_engine.py, crawler.py
-│   └── utils/              # response helpers, auth decorators
+│   ├── services/           # Business logic: crawler, face_engine
+│   └── utils/              # Helpers for response formatting and auth decorators
+├── migrations/             # Alembic database migrations & manual db setup scripts 
 ├── storage/                # Drop event photos here
-├── tests/
-├── docker-compose.yml
-├── requirements.txt
-├── .env.example
-├── run.py
-└── PRD.md
+├── Dockerfile              # Docker image declaration
+├── docker-compose.yml      # Local Postgres + pgvector setup
+├── railway.toml            # Railway CI/CD builder configuration
+├── start.sh                # Startup script (handles migrations and pgvector indexing)
+└── run.py                  # Local entrypoint wrapper
 ```
+
+---
+
+## API Usage (cURLs)
+
+### 1. Upload Event Photos (Admin)
+Upload images to the server dynamically:
+```bash
+curl -X POST http://localhost:5000/api/v1/admin/upload \
+  -H "X-Admin-Key: admin-secret" \
+  -F "photos=@/path/to/group_photo1.jpg" \
+  -F "photos=@/path/to/group_photo2.png"
+```
+
+### 2. Crawl & Index Photos (Admin)
+Processes new images uploaded to the `storage/` directory, extracts faces, and creates vector embeddings:
+```bash
+curl -X POST http://localhost:5000/api/v1/admin/crawl \
+  -H "X-Admin-Key: admin-secret" \
+  -H "Content-Type: application/json" \
+  -d '{"force_reindex": false}'
+```
+
+### 3. Check Crawl Status (Admin)
+```bash
+curl http://localhost:5000/api/v1/admin/crawl/status/<job_id> \
+  -H "X-Admin-Key: admin-secret"
+```
+
+### 4. Authenticate with Selfie (User)
+```bash
+curl -X POST http://localhost:5000/api/v1/auth/selfie \
+  -F "selfie=@/path/to/your/selfie.jpg"
+```
+_Response includes a `token` (JWT) and your `grab_id`._
+
+### 5. Get Your Photos (User)
+```bash
+curl http://localhost:5000/api/v1/images \
+  -H "Authorization: Bearer <token>"
+```
+
+### 6. Download a Found Photo (User)
+```bash
+curl http://localhost:5000/api/v1/images/<image_id>/file \
+  -H "Authorization: Bearer <token>" \
+  --output my_awesome_photo.jpg
+```
+
+---
+
+## How pgvector Works
+
+`pgvector` is a robust PostgreSQL extension adding a native `vector` column type and extremely fast similarity search operators natively in the relational DB. No external vector database needed!
+
+```sql
+-- Example: Store an embedding
+INSERT INTO face_identities (embedding) VALUES ('[0.12, -0.34, ...]'::vector);
+
+-- Example: Find closest match using cosine distance (<=>)
+SELECT grab_id, embedding <=> '[0.11, -0.33, ...]'::vector AS distance
+FROM face_identities
+ORDER BY distance
+LIMIT 1;
+```
+> **Note:** A distance of `0` means identical faces. In the application, we treat any distance below `0.40` (configurable via `FACE_SIMILARITY_THRESHOLD`) as a match for the same person.
+
+---
+
+## Deployment 
+
+See [DEPLOY.md](DEPLOY.md) for detailed instructions on deploying the application to Railway automatically from GitHub.
