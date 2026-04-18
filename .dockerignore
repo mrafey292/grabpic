@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.git
+.gitignore
+*.md
+tests/
+storage/*          # don't bake event photos into the image
+!storage/.gitkeep  # but keep the folder itself
+migrations/versions/

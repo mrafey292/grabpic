@@ -1,0 +1,13 @@
+flask>=3.0
+flask-sqlalchemy>=3.1
+flask-migrate>=4.0
+flask-jwt-extended>=4.6
+flasgger>=0.9.7          # swagger UI at /apidocs — free
+psycopg2-binary>=2.9
+pgvector>=0.3.0          # python adapter for pgvector types
+deepface>=0.0.93         # wraps ArcFace, FaceNet etc — free
+pillow>=10.0             # thumbnails
+python-dotenv>=1.0
+gunicorn>=21.0
+pytest>=8.0
+pytest-flask>=1.3
