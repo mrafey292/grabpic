@@ -1,6 +1,5 @@
 import os
-import io
-from flask import Blueprint, current_app, send_file
+from flask import Blueprint, request, current_app, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from PIL import Image as PILImage
 
@@ -34,11 +33,6 @@ def list_images():
         description: Paginated list of images
     """
     grab_id  = get_jwt_identity()
-    page     = int(current_app.request.args.get("page", 1)) if False else \
-               _int_arg("page", 1)
-    per_page = min(_int_arg("per_page", 20), 100)
-
-    from flask import request
     page     = _int_arg("page", 1)
     per_page = min(_int_arg("per_page", 20), 100)
 
@@ -184,7 +178,6 @@ def _get_authorized_image(image_id):
 
 
 def _int_arg(name, default):
-    from flask import request
     try:
         return max(1, int(request.args.get(name, default)))
     except (ValueError, TypeError):

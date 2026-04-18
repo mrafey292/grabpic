@@ -21,19 +21,21 @@ def create_app(config_name=None):
 
     # Preload DeepFace model weights at startup (avoids 60s hang on first request)
     # Downloads ArcFace weights ~500MB on very first run, then cached locally
-    with app.app_context():
-        import threading
-        def _preload():
-            try:
-                from deepface import DeepFace
-                import numpy as np
-                dummy = np.zeros((112, 112, 3), dtype=np.uint8)
-                DeepFace.represent(dummy, model_name=app.config["FACE_MODEL"],
-                                   enforce_detection=False)
-                app.logger.info("DeepFace model preloaded successfully.")
-            except Exception as e:
-                app.logger.warning(f"DeepFace preload failed (non-fatal): {e}")
-        threading.Thread(target=_preload, daemon=True).start()
+    # Skip during CLI commands (flask db init/migrate/upgrade) to avoid TF/CUDA segfaults
+    if not os.getenv("SKIP_DEEPFACE_PRELOAD"):
+        with app.app_context():
+            import threading
+            def _preload():
+                try:
+                    from deepface import DeepFace
+                    import numpy as np
+                    dummy = np.zeros((112, 112, 3), dtype=np.uint8)
+                    DeepFace.represent(dummy, model_name=app.config["FACE_MODEL"],
+                                       enforce_detection=False)
+                    app.logger.info("DeepFace model preloaded successfully.")
+                except Exception as e:
+                    app.logger.warning(f"DeepFace preload failed (non-fatal): {e}")
+            threading.Thread(target=_preload, daemon=True).start()
 
     # Register blueprints
     from .routes.admin import admin_bp

@@ -7,13 +7,12 @@ FROM python:3.11-slim AS model-downloader
 RUN pip install --no-cache-dir deepface tf-keras
 
 # Pre-download ArcFace weights into the default DeepFace cache dir (~/.deepface)
-RUN python -c "
-from deepface import DeepFace
-import numpy as np
-dummy = np.zeros((112, 112, 3), dtype=np.uint8)
-DeepFace.represent(dummy, model_name='ArcFace', enforce_detection=False)
-print('ArcFace weights downloaded.')
-"
+RUN python -c "\
+from deepface import DeepFace; \
+import numpy as np; \
+dummy = np.zeros((112, 112, 3), dtype=np.uint8); \
+DeepFace.represent(dummy, model_name='ArcFace', enforce_detection=False); \
+print('ArcFace weights downloaded.')"
 
 # ── Stage 2: Production app ───────────────────────────────────────────────────
 FROM python:3.11-slim

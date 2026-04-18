@@ -4,10 +4,10 @@
 
 set -e  # exit immediately if any command fails
 
-echo "==> Running DB migrations..."
-flask --app run.py db upgrade
+# Skip DeepFace preload during DB setup commands (avoids TF/CUDA issues)
+export SKIP_DEEPFACE_PRELOAD=1
 
-echo "==> Enabling pgvector extension..."
+echo "==> Enabling pgvector extension (must be before migrations)..."
 python -c "
 from app import create_app
 from app.extensions import db
@@ -19,6 +19,9 @@ with app.app_context():
     db.session.commit()
     print('pgvector extension ready.')
 "
+
+echo "==> Running DB migrations..."
+flask --app run.py db upgrade
 
 echo "==> Running manual extras (IVFFlat index, crawl_jobs table)..."
 python -c "
@@ -42,6 +45,9 @@ with app.app_context():
                 print(f'  Skipped (likely already exists): {e}')
     print('Manual extras applied.')
 "
+
+# Unset so the actual server DOES preload DeepFace
+unset SKIP_DEEPFACE_PRELOAD
 
 echo "==> Starting gunicorn..."
 exec gunicorn run:app \

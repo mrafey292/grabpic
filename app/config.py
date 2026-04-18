@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -7,7 +8,9 @@ load_dotenv()
 class BaseConfig:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-jwt-secret")
-    JWT_ACCESS_TOKEN_EXPIRES = int(os.getenv("JWT_EXPIRY_HOURS", 24)) * 3600
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(
+        hours=int(os.getenv("JWT_EXPIRY_HOURS", 24))
+    )
 
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -17,7 +20,9 @@ class BaseConfig:
 
     FACE_MODEL = os.getenv("FACE_MODEL", "ArcFace")
     FACE_DETECTOR = os.getenv("FACE_DETECTOR", "retinaface")
-    FACE_SIMILARITY_THRESHOLD = float(os.getenv("FACE_SIMILARITY_THRESHOLD", 0.40))
+    FACE_SIMILARITY_THRESHOLD = float(
+        os.getenv("FACE_SIMILARITY_THRESHOLD", 0.40)
+    )
 
 
 class DevelopmentConfig(BaseConfig):

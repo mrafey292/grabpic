@@ -5,11 +5,13 @@ Wraps DeepFace for:
   1. Extracting 512-d ArcFace embeddings from an image (one per face detected)
   2. Finding or creating a FaceIdentity via pgvector cosine similarity
   3. Matching a selfie against all known grab_ids
+
+NOTE: DeepFace and numpy are imported lazily inside functions to avoid
+loading TensorFlow at module import time (which segfaults on systems
+without CUDA when running CLI commands like flask db init).
 """
 
-import numpy as np
 from flask import current_app
-from deepface import DeepFace
 from sqlalchemy import text
 
 from ..extensions import db
@@ -44,6 +46,7 @@ def extract_faces(image_path: str) -> list[dict]:
     Returns [] if no faces are detected (won't raise).
     """
     try:
+        from deepface import DeepFace
         results = DeepFace.represent(
             img_path=image_path,
             model_name=_model(),
@@ -84,7 +87,6 @@ def find_or_create_identity(embedding: list[float]) -> tuple[FaceIdentity, bool]
     vec_str   = _to_pgvector_literal(embedding)
 
     # pgvector cosine distance: 0 = identical, 2 = opposite
-    # We use (1 - cosine_similarity) so threshold of 0.40 means 60% similar
     row = db.session.execute(
         text(f"""
             SELECT grab_id,

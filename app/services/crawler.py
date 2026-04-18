@@ -10,6 +10,7 @@ Key improvements over naive version:
 
 import os
 import uuid
+import json
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -143,7 +144,6 @@ def _flush_batch(job_id: str, results: list[dict]):
         db.session.rollback()
         errors.append(f"Batch commit failed: {e}")
 
-    import json
     db.session.execute(text("""
         UPDATE crawl_jobs SET
             images_processed  = images_processed  + :n,
@@ -166,7 +166,6 @@ def _update_job(job_id, **kwargs):
 
 
 def _append_error(job_id, error_msg):
-    import json
     db.session.execute(text("""
         UPDATE crawl_jobs SET errors = errors || :e::jsonb WHERE job_id = :id
     """), {"id": job_id, "e": json.dumps([error_msg])})
