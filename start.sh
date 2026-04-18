@@ -51,7 +51,7 @@ with app.app_context():
             sql = f.read()
         for stmt in sql.split(';'):
             stmt = stmt.strip()
-            if stmt and not stmt.startswith('--'):
+            if stmt:
                 try:
                     db.session.execute(text(stmt))
                     db.session.commit()
