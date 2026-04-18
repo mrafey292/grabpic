@@ -43,12 +43,16 @@ def start_crawl():
     if not os.path.exists(storage_path):
         return err(f"storage_path '{storage_path}' does not exist.")
 
-    job_id = crawler.start_crawl(storage_path, force_reindex)
-    return ok({
-        "job_id": job_id,
-        "status": "started",
-        "message": f"Poll /api/v1/admin/crawl/status/{job_id} for progress.",
-    })
+    try:
+        job_id = crawler.start_crawl(storage_path, force_reindex)
+        return ok({
+            "job_id": job_id,
+            "status": "started",
+            "message": f"Poll /api/v1/admin/crawl/status/{job_id} for progress.",
+        })
+    except Exception as e:
+        import traceback
+        return err(f"Crawler start failed: {str(e)}\n\n{traceback.format_exc()}", 500)
 
 
 @admin_bp.get("/crawl/status/<job_id>")
