@@ -6,6 +6,14 @@ FROM python:3.11-slim AS model-downloader
 
 RUN pip install --no-cache-dir deepface tf-keras
 
+# System deps for OpenCV which is required by DeepFace
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1 \
+    libglib2.0-0 \
+    libgomp1 \
+    libxcb1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Pre-download ArcFace weights into the default DeepFace cache dir (~/.deepface)
 RUN python -c "\
 from deepface import DeepFace; \
@@ -24,6 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1 \
     libglib2.0-0 \
     libgomp1 \
+    libxcb1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy pre-downloaded model weights from stage 1
