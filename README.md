@@ -2,7 +2,7 @@
 
 Intelligent facial recognition backend for large-scale event photo retrieval.
 
-**Live Demo (Railway):** [Add Railway Link Here](#)
+**Live Demo (Railway):** [https://grabpic-production-4904.up.railway.app/](https://grabpic-production-4904.up.railway.app/)
 
 Stack: **Flask · DeepFace (ArcFace) · PostgreSQL + pgvector**
 
